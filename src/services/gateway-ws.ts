@@ -289,8 +289,8 @@ export class GatewayWebSocket {
           id: uuid(),
           method: "connect",
           params: {
-            minProtocol: 3,
-            maxProtocol: 3,
+            minProtocol: 4,
+            maxProtocol: 4,
             client: {
               id: "openclaw-control-ui",
               version: "1.0.0",
@@ -312,16 +312,6 @@ export class GatewayWebSocket {
           },
         }
         this.ws?.send(JSON.stringify(connectMsg))
-        return
-      }
-      if (
-        frame.event === "connect.hello" ||
-        frame.event === "hello" ||
-        frame.event === "hello-ok"
-      ) {
-        this.reconnectDelay = 1000
-        this.onStatusChange?.("connected")
-        this.startHeartbeat()
         return
       }
       this.onEvent?.(frame.event, frame.payload)
@@ -347,10 +337,12 @@ export class GatewayWebSocket {
         }
         return
       }
-      // Connect response
+      // Connect response (gateway sends hello-ok as the res payload of the
+      // initial connect req, not as a separate event since protocol v4).
       if (res.ok !== false) {
         this.reconnectDelay = 1000
         this.onStatusChange?.("connected")
+        this.startHeartbeat()
         const payload = res.payload as ConnectResult | undefined
         if (payload?.snapshot) {
           this.onConnect?.(payload)
@@ -451,7 +443,12 @@ export function setupEventDispatch(handlers: EventDispatchHandlers): () => void 
         handlers.onApprovalResolved(payload)
         break
       default:
-        if (event === "agent" || event.startsWith("chat.") || event.startsWith("session.")) {
+        if (
+          event === "agent" ||
+          event === "chat" ||
+          event.startsWith("chat.") ||
+          event.startsWith("session.")
+        ) {
           handlers.onChatEvent(event, payload)
         }
         break

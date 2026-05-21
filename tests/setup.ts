@@ -49,8 +49,8 @@ export class TestGatewayClient {
             id: randomId(),
             method: "connect",
             params: {
-              minProtocol: 3,
-              maxProtocol: 3,
+              minProtocol: 4,
+              maxProtocol: 4,
               client: {
                 id: "openclaw-control-ui",
                 version: "1.0.0",
@@ -75,20 +75,8 @@ export class TestGatewayClient {
           return
         }
 
-        // Handle hello → connected
-        if (
-          frame.type === "event" &&
-          (frame.event === "connect.hello" ||
-            frame.event === "hello" ||
-            frame.event === "hello-ok")
-        ) {
-          this.connected = true
-          clearTimeout(timeout)
-          resolve()
-          return
-        }
-
-        // Handle connect response (also marks connected)
+        // Handle connect response: gateway sends hello-ok as the res payload
+        // of the initial connect req (protocol v4), not as a separate event.
         if (frame.type === "response" || frame.type === "res") {
           const res = frame as {
             id: string
