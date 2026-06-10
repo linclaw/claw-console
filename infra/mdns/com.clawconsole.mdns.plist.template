@@ -1,14 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!--
-  LaunchDaemon that advertises claw.local over mDNS at boot and keeps it alive.
-
-  Install (root, runs before login so it survives reboots):
-      sudo cp infra/mdns/com.clawconsole.mdns.plist /Library/LaunchDaemons/
-      sudo launchctl load -w /Library/LaunchDaemons/com.clawconsole.mdns.plist
-
-  The ProgramArguments path is absolute — if this repo moves, update it and
-  reload. Logs go to /tmp/claw-mdns.log.
+  Template for the mDNS LaunchDaemon. infra/mdns/install.sh substitutes this
+  checkout's absolute path to advertise-claw-local.sh into ProgramArguments below
+  and writes the real plist (machine-specific, hence gitignored) before installing.
+  Logs go to /tmp/claw-mdns.log.
 -->
 <plist version="1.0">
 <dict>
@@ -16,7 +12,7 @@
     <string>com.clawconsole.mdns</string>
     <key>ProgramArguments</key>
     <array>
-        <string>/Users/fernandolincoln/repos/claw-console/infra/mdns/advertise-claw-local.sh</string>
+        <string>__SCRIPT_PATH__</string>
     </array>
     <key>RunAtLoad</key>
     <true/>

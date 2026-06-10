@@ -4,7 +4,7 @@ Make the console reachable from any device on the LAN at a clean hostname
 (`http://claw.local`) instead of an IP and port.
 
 ```
-            ┌──────────────── Mac mini (192.168.0.102) ─────────────────┐
+            ┌──────────────── your Mac (LAN, via mDNS) ─────────────────┐
  phone /    │                                                           │
  PC on  ──► │  nginx :80 ──► Vite dev server 127.0.0.1:5174 ──┐         │
  the LAN    │  (claw.local)        (claw-console, via pm2)     │ /ws,/api │
@@ -40,13 +40,17 @@ the gateway through Vite — no per-device config.
 ## 1. Advertise `claw.local` over mDNS (LaunchDaemon)
 
 ```sh
-sudo cp infra/mdns/com.clawconsole.mdns.plist /Library/LaunchDaemons/
-sudo launchctl load -w /Library/LaunchDaemons/com.clawconsole.mdns.plist
+sh infra/mdns/install.sh    # generates this checkout's plist, then installs it (sudo)
 ```
 
-This runs [`mdns/advertise-claw-local.sh`](mdns/advertise-claw-local.sh), which
-detects the LAN IP and holds open a `dns-sd -P` registration for the `claw.local`
-address record. `KeepAlive` restarts it on crash; `RunAtLoad` starts it at boot.
+`install.sh` fills
+[`com.clawconsole.mdns.plist.template`](mdns/com.clawconsole.mdns.plist.template)
+with this checkout's absolute path to `advertise-claw-local.sh` — the resulting
+plist is machine-specific, so it's generated and **gitignored**, not committed —
+then copies it into `/Library/LaunchDaemons/` and loads it. The daemon runs
+[`mdns/advertise-claw-local.sh`](mdns/advertise-claw-local.sh), which detects the
+LAN IP and holds open a `dns-sd -P` registration for the `claw.local` address
+record. `KeepAlive` restarts it on crash; `RunAtLoad` starts it at boot.
 
 Manage it:
 
@@ -56,8 +60,8 @@ sudo launchctl kickstart -k system/com.clawconsole.mdns                   # rest
 tail -f /tmp/claw-mdns.log                                                # logs
 ```
 
-> The plist's script path is absolute — if you move this repo, edit the plist
-> and reload.
+> The plist embeds an absolute path, so it's generated (gitignored), not
+> committed. If you move this repo, re-run `install.sh`.
 
 ## 2. Start nginx on :80
 
@@ -107,7 +111,7 @@ The app reads gateway connection settings (`VITE_GATEWAY_*`) from `.env`
 ## Verify
 
 ```sh
-ping claw.local                      # resolves to the Mac mini's LAN IP
+ping claw.local                      # resolves to this Mac's LAN IP
 curl -I http://claw.local            # HTTP/1.1 200, content-type text/html
 ```
 
